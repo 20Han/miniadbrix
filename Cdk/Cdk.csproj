@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <!-- Roll forward to future major versions of the netcoreapp as needed -->
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CDK Construct Library dependencies -->
+    <PackageReference Include="Amazon.CDK.Lib" Version="2.31.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Amazon.CDK" />
+    <None Remove="Amazon.CDK.Lib" />
+  </ItemGroup>
+</Project>

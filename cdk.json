@@ -1,0 +1,3 @@
+{
+    "app": "cd EventsWorker.Lambda/src/EventsWorker.Lambda; dotnet lambda package; cd ../../..; dotnet run --project Cdk/Cdk.csproj"
+}
