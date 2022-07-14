@@ -102,7 +102,7 @@ namespace Cdk
             {
                 QueueName = "EventDeadLetterQueue.fifo",
                 DeliveryDelay = Duration.Millis(0),
-                RetentionPeriod = Duration.Days(1),
+                RetentionPeriod = Duration.Minutes(30),
                 ContentBasedDeduplication = true,
                 Fifo = true
             });
@@ -113,6 +113,7 @@ namespace Cdk
                 VisibilityTimeout = Duration.Seconds(6 * lambdaTimeoutSeconds),
                 ContentBasedDeduplication = true,
                 Fifo = true,
+                
                 DeadLetterQueue = new DeadLetterQueue {
                     MaxReceiveCount = 3,
                     Queue = eventDeadLetterQueue,
@@ -133,7 +134,7 @@ namespace Cdk
                 MachineImage = new AmazonLinuxImage(new AmazonLinuxImageProps
                 {
                     Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
-                }),
+                })
             });
 
             eventsWorkerLambda.AddEventSource(new SqsEventSource(eventQueue, new SqsEventSourceProps

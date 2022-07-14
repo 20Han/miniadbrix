@@ -22,6 +22,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.6" />
+    <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.2.63" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,11 +39,14 @@
     <None Remove="Newtonsoft.Json" />
     <None Remove="AWSSDK.Extensions.NETCore.Setup" />
     <None Remove="Microsoft.EntityFrameworkCore.InMemory" />
+    <None Remove="DB\SecretsManager\" />
+    <None Remove="AWSSDK.SecretsManager" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Dto\" />
     <Folder Include="Entities\" />
     <Folder Include="Repository\" />
     <Folder Include="DB\" />
+    <Folder Include="DB\SecretsManager\" />
   </ItemGroup>
 </Project>
