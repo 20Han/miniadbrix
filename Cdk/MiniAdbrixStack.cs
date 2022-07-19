@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using Amazon.CDK;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.ECR;
+using Amazon.CDK.AWS.ECS;
+using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Lambda.EventSources;
+using Amazon.CDK.AWS.Logs;
 using Amazon.CDK.AWS.RDS;
 using Amazon.CDK.AWS.SQS;
 using Constructs;
-using InstanceProps = Amazon.CDK.AWS.EC2.InstanceProps;
 
 namespace Cdk
 {
@@ -44,11 +46,12 @@ namespace Cdk
                 Description = "lambda security group"
             });
 
-            // We need this security group to add an ingress rule and allow our EC2 to query the db
-            var ec2SG = new SecurityGroup(this, "EC2 to RDS Connection", new SecurityGroupProps
+            // We need this security group to add an ingress rule and allow our fargate to query the db
+            var fargateSG = new SecurityGroup(this, "fargate security group", new SecurityGroupProps
             {
                 Vpc = vpc,
-                Description = "Ec2 security group"
+                Description = "fargate security group",
+                AllowAllOutbound = true,
             });
 
             var dbSG = new SecurityGroup(this, "DB SecurityGroup", new SecurityGroupProps
@@ -59,9 +62,12 @@ namespace Cdk
             });
 
             dbSG.AddIngressRule(lambdaSG, Port.Tcp(5432), "allow lambda connection");
-            dbSG.AddIngressRule(ec2SG, Port.Tcp(5432), "allow EC2 connection");            
-            ec2SG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(80), "allow any http connection");
-            ec2SG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(443), "allow any https connection");
+            dbSG.AddIngressRule(fargateSG, Port.Tcp(5432), "allow fargate connection");
+            dbSG.AddIngressRule(Peer.Ipv4("106.241.27.82/32"), Port.Tcp(5432), "allow local connection");
+            fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(8080), "allow any 80 connection");
+            fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(80), "allow any http connection");
+            fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(443), "allow any https connection");
+            fargateSG.AddIngressRule(Peer.Ipv4("106.241.27.82/32"), Port.Tcp(22), "allow any https connection");
 
             // PostgreSql DB Instance (delete protection turned off because pattern is for learning.)
             // re-enable delete protection for a real implementation
@@ -125,16 +131,10 @@ namespace Cdk
                 RemovalPolicy = RemovalPolicy.DESTROY
             });
 
-            var eventsApiEC2 = new Instance_(this, "eventApiEC2", new InstanceProps
+            var fargateRole = new Role(this, "fargaterRole", new RoleProps
             {
-                Vpc = vpc,
-                VpcSubnets = new SubnetSelection { SubnetType = SubnetType.PUBLIC },
-                SecurityGroup = ec2SG,
-                InstanceType = InstanceType.Of(InstanceClass.T3, InstanceSize.MICRO),
-                MachineImage = new AmazonLinuxImage(new AmazonLinuxImageProps
-                {
-                    Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
-                })
+                AssumedBy = new ServicePrincipal("ecs-tasks.amazonaws.com"),
+                Description = "fargate IAM Role"
             });
 
             eventsWorkerLambda.AddEventSource(new SqsEventSource(eventQueue, new SqsEventSourceProps
@@ -144,40 +144,59 @@ namespace Cdk
             }));
 
             eventDB.GrantConnect(eventsWorkerLambda);
-            eventDB.GrantConnect(eventsApiEC2);
+            eventDB.GrantConnect(fargateRole);
             eventDB.Secret.GrantRead(eventsWorkerLambda);
-            eventDB.Secret.GrantRead(eventsApiEC2);
+            eventDB.Secret.GrantRead(fargateRole);
             eventQueue.GrantConsumeMessages(eventsWorkerLambda);
-            eventQueue.GrantSendMessages(eventsApiEC2);
+            eventQueue.GrantSendMessages(fargateRole);
             eventDeadLetterQueue.GrantSendMessages(eventsWorkerLambda);
 
             /*
             //Fargate Cluster
             //api 자동 배포를 위해 추가
-            */
-            //var eventsApiImage = new DockerImageAsset(this, "EventsApiImage", new DockerImageAssetProps
-            //{
-            //    Directory = "../Events.API"
-            //});
+            //첫 배포때는 주석 처리한 후 ECR Repository에 image 배포가 끝나면 다시 주석 해제후 배포
+L            */
+            var cluster = new Cluster(this, "MiniAdbrixCluster", new ClusterProps
+            {
+                Vpc = vpc,
+            });
 
-            //var cluster = new Cluster(this, "MiniAdbrixCluster", new ClusterProps
-            //{
-            //    Vpc = vpc,
-            //});
+            var fargateTaskDefinition = new FargateTaskDefinition(this, "fargateTask", new FargateTaskDefinitionProps
+            {
+                MemoryLimitMiB = 512,
+                Cpu = 256,
+                TaskRole = fargateRole,
+            });
 
-            //new ApplicationLoadBalancedFargateService(this, "MiniAdbrixFargateService", new ApplicationLoadBalancedFargateServiceProps {
-            //    Cluster = cluster,
-            //    Cpu = 256,
-            //    DesiredCount = 1,
-            //    TaskImageOptions = new ApplicationLoadBalancedTaskImageOptions
-            //    {
-            //        Image = ContainerImage.FromDockerImageAsset(eventsApiImage),
-            //        ContainerPort = 8080,
-            //    },
-            //    MemoryLimitMiB = 512,
-            //    PublicLoadBalancer = true,
-            //})
+            var fargateLogGroup = new LogGroup(this, "fargateServiceLogGroup", new LogGroupProps
+            {
+                LogGroupName = "/ecs/fargateEventApi",
+                RemovalPolicy = RemovalPolicy.DESTROY
+            });
 
+            fargateTaskDefinition.AddContainer("EventApi", new ContainerDefinitionOptions
+            {
+                Image = ContainerImage.FromEcrRepository(ecrRepository, "latest"),
+                PortMappings = new PortMapping[] {new PortMapping { ContainerPort = 80} },
+                Logging = new AwsLogDriver(new AwsLogDriverProps {
+                    LogGroup = fargateLogGroup,
+                    StreamPrefix = "FargateEventApiService"
+                }),
+                Environment = new Dictionary<string, string> {
+                    { "RDS_ENDPOINT", eventDB.DbInstanceEndpointAddress },
+                    { "RDS_SECRET_NAME", eventDB.Secret.SecretName },
+                    { "RDS_DB_NAME", "Events"},
+                }
+            });
+
+            var fargateService = new FargateService(this, "MiniAdbrixFargateService", new FargateServiceProps
+            {
+                Cluster = cluster,
+                DesiredCount = 1,
+                TaskDefinition = fargateTaskDefinition,
+                AssignPublicIp = true,
+                SecurityGroups = new ISecurityGroup[] { fargateSG },
+            });
 
             /*
              init DB

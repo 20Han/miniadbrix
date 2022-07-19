@@ -10,10 +10,9 @@ RUN dotnet restore
 RUN dotnet publish -c Release -o out
 
 ## Serve stage
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 
 WORKDIR /app
 COPY --from=build /app/out . 
 
-EXPOSE 8080
-EXPOSE 443
+EXPOSE 80
 ENTRYPOINT ["dotnet", "Events.API.dll"]

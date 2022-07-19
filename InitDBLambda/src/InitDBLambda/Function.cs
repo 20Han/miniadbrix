@@ -26,7 +26,7 @@ public class Function
         string dbAdminId = "";
         string dbAdminPassword = "";
 
-        IAmazonSecretsManager secretClient = new AmazonSecretsManagerClient(Amazon.RegionEndpoint.APNortheast2);
+        IAmazonSecretsManager secretClient = new AmazonSecretsManagerClient(Amazon.RegionEndpoint.APNortheast3);
         GetSecretValueRequest secretRequest = new GetSecretValueRequest();
         secretRequest.SecretId = secretName;
         secretRequest.VersionStage = "AWSCURRENT";

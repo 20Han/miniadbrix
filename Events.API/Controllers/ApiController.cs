@@ -11,7 +11,7 @@ namespace Events.API.Controllers;
 public class ApiController : ControllerBase
 {
     private readonly IEventRepository repository;
-    
+    private readonly string queueName = "EventsQueue.fifo";
 
     public ApiController(
         IEventRepository repository
@@ -55,7 +55,7 @@ public class ApiController : ControllerBase
         };
 
         string message = JsonConvert.SerializeObject(_event);
-        string queueName = "EventsQueue.fifo";
+        
 
         bool isSuccess = await repository.SendSQS(queueName, message);
 

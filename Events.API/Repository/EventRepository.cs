@@ -2,7 +2,7 @@
 using Amazon.SQS.Model;
 using Events.API.DB;
 using Events.API.Entities;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace Events.API.Repository;
 
@@ -23,7 +23,7 @@ public class EventRepository : IEventRepository
 
     public async Task<IEnumerable<Event>> GetEvent(Guid userId)
     {
-        return await Task.FromResult(dbContext.Events.Where(e => e.UserId == userId));
+        return await Task.FromResult(dbContext.Events.Include(evt => evt.Parameters).Where(e => e.UserId == userId));
     }
 
     public async Task<bool> SaveEvent(Event _event)
@@ -46,6 +46,7 @@ public class EventRepository : IEventRepository
         {
             QueueUrl = queueUrl.QueueUrl,
             MessageBody = message,
+            MessageGroupId = "miniadbrix"
         };
 
         SendMessageResponse responseSendMsg = await sqs.SendMessageAsync(request);

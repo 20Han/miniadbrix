@@ -1,9 +1,32 @@
 using Amazon.SQS;
 using Events.API.DB;
+using Events.API.DB.SecretsManager;
 using Events.API.Repository;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Get SecretValue
+string dbEndpoint = Environment.GetEnvironmentVariable("RDS_ENDPOINT") ?? "";
+string dbName = Environment.GetEnvironmentVariable("RDS_DB_NAME") ?? "";
+string secretName = Environment.GetEnvironmentVariable("RDS_SECRET_NAME") ?? "";
+var secretString = new SecretManager(secretName).Get();
+var secretValues = JObject.Parse(secretString);
+string? dbAdminId = null;
+string? dbAdminPassword = null;
+
+if (secretValues != null && secretValues["username"] != null && secretValues["password"] != null)
+{
+    dbAdminId = secretValues["username"].ToString();
+    dbAdminPassword = secretValues["password"].ToString();
+}
+else
+{
+    throw new Exception("Cannot get SecretManagerValues");
+}
+
+var connectionString = $"Host={dbEndpoint};Username={dbAdminId};Password={dbAdminPassword};Database={dbName}";
 
 // Add services to the container.
 builder.Services.AddDbContext<EventDBContext>(
@@ -14,11 +37,11 @@ builder.Services.AddDbContext<EventDBContext>(
         //if (builder.Environment.IsDevelopment())
         //    opts.UseInMemoryDatabase("test");
         //else
-        opts.UseNpgsql(builder.Configuration.GetConnectionString("AppDb"));
+        opts.UseNpgsql(connectionString);
     }, ServiceLifetime.Scoped
 );
 builder.Services.AddSingleton<IAmazonSQS>(_ =>
-    new AmazonSQSClient(Amazon.RegionEndpoint.APNortheast2)
+    new AmazonSQSClient(Amazon.RegionEndpoint.APNortheast3)
 );
 builder.Services.AddTransient<IEventRepository, EventRepository>();
 builder.Services.AddControllers();
@@ -36,8 +59,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
