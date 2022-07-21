@@ -19,9 +19,5 @@
   <ItemGroup>
     <None Remove="AWSSDK.SecretsManager" />
     <None Remove="Newtonsoft.Json" />
-    <None Remove="createTableSQL" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="createTableSQL" />
   </ItemGroup>
 </Project>

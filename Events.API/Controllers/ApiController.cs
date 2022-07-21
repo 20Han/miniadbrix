@@ -69,20 +69,32 @@ public class ApiController : ControllerBase
     [Route("search")]
     public async Task<SearchEventResponseDto> SearchItem(SearchEventDto searchEventDto)
     {
-        var results = (await repository.GetEvent(searchEventDto.UserId))
-            .Select(_event => new Result
-            {
-                EventId = _event.EventId,
-                Event = _event.EventName,
-                Parameters = _event.Parameters,
-                EventDatetime = _event.CreateDate
-            });
-
-
-        return new SearchEventResponseDto
+        try
         {
-            IsSuccess = "true",
-            Results = results
-        };
+            var results = (await repository.GetEvent(searchEventDto.UserId))
+                .Select(_event => new Result
+                {
+                    EventId = _event.EventId,
+                    Event = _event.EventName,
+                    Parameters = _event.Parameters,
+                    EventDatetime = _event.CreateDate
+                });
+
+            return new SearchEventResponseDto
+            {
+                IsSuccess = "true",
+                Results = results
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+
+            return new SearchEventResponseDto
+            {
+                IsSuccess = "false",
+                Results = new List<Result>()
+            };
+        }
     }
 }

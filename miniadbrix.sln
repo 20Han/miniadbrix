@@ -27,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{6E306E14-1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitDBLambda.Tests", "InitDBLambda\test\InitDBLambda.Tests\InitDBLambda.Tests.csproj", "{D6C1D3D0-097F-444B-83CB-78C02AC4CD26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Events.API.Tests", "Events.API.Tests\Events.API.Tests.csproj", "{76CA8523-466D-410B-9723-0BC5723FAA46}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +62,10 @@ Global
 		{D6C1D3D0-097F-444B-83CB-78C02AC4CD26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6C1D3D0-097F-444B-83CB-78C02AC4CD26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6C1D3D0-097F-444B-83CB-78C02AC4CD26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76CA8523-466D-410B-9723-0BC5723FAA46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76CA8523-466D-410B-9723-0BC5723FAA46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76CA8523-466D-410B-9723-0BC5723FAA46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76CA8523-466D-410B-9723-0BC5723FAA46}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7A403CC1-5C8D-4ACF-A07B-35E1F4F3ED0C} = {A26FD6C7-2EA6-4454-ABC9-67930B6722DF}
