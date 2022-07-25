@@ -34,9 +34,6 @@ builder.Services.AddDbContext<EventDBContext>(
     {
         opts.EnableSensitiveDataLogging();
         opts.EnableDetailedErrors();
-        //if (builder.Environment.IsDevelopment())
-        //    opts.UseInMemoryDatabase("test");
-        //else
         opts.UseNpgsql(connectionString);
     }, ServiceLifetime.Scoped
 );

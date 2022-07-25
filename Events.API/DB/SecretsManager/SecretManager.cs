@@ -30,7 +30,7 @@ public class SecretManager
         }
         catch (Exception e)
         {
-            return "{\"username\" : \"miniadbrix\", \"password\" : \"6c.Umxf5vq-infc3_yOJEYV_btAHDo\"}";
+            return "{\"username\" : \"miniadbrix\", \"password\" : \"example_password\"}";
         }
 
         return response.SecretString;

@@ -12,6 +12,9 @@ namespace Events.API.Tests.ControllerTest;
 
 public class TestApiController
 {
+    /*
+     * ApiController의 CollectItem API가 성공했을 경우를 테스트한다
+     */
     [Fact]
     public async Task CollectItem_Success()
     {
@@ -42,6 +45,9 @@ public class TestApiController
         result.IsSuccess.Should().Be("true");
     }
 
+    /*
+     * ApiController의 CollectItem API가 실했을 경우를 테스트한다
+     */
     [Fact]
     public async Task CollectItem_Fail()
     {
@@ -72,6 +78,9 @@ public class TestApiController
         result.IsSuccess.Should().Be("false");
     }
 
+    /*
+     * ApiController의 SearchEvent API가 성공했을 경우를 테스트한다
+     */
     [Fact]
     public async Task SearchEvent_Success()
     {
@@ -111,6 +120,9 @@ public class TestApiController
         result.Results.Count().Should().Be(2);
     }
 
+    /*
+     * repository.GetEvent에서 에러가 발생해 ApiController의 SearchEvent API가 실패했을 경우를 테스트한다
+     */
     [Fact]
     public async Task SearchEvent_Fail()
     {

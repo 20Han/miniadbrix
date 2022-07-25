@@ -15,23 +15,11 @@ namespace EventsWorker.Lambda;
 
 public class Function
 {
-    /// <summary>
-    /// Default constructor. This constructor is used by Lambda to construct the instance. When invoked in a Lambda environment
-    /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
-    /// region the Lambda function is executed in.
-    /// </summary>
     public Function()
     {
     }
 
 
-    /// <summary>
-    /// This method is called for every Lambda invocation. This method takes in an SQS event object and can be used 
-    /// to respond to SQS messages.
-    /// </summary>
-    /// <param name="evnt"></param>
-    /// <param name="context"></param>
-    /// <returns></returns>
     public async Task<SQSBatchResponse> FunctionHandler(SQSEvent evnt, ILambdaContext context)
     {
         List<BatchItemFailure> batchItemFailures = new();
@@ -57,7 +45,7 @@ public class Function
         }
         catch (Exception e)
         {
-            context.Logger.LogInformation($"error while GetSceretValueAsync, errorMessage = {e.Message}");
+            context.Logger.LogError($"error while GetSceretValueAsync, errorMessage = {e.Message}");
             batchItemFailures.Concat(evnt.Records.Select(_message => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = _message.MessageId }).ToList());
             return new SQSBatchResponse(batchItemFailures);
         }
@@ -71,7 +59,7 @@ public class Function
         }
         else
         {
-            context.Logger.LogInformation($"empty secretstring for {dbAdminId}");
+            context.Logger.LogError($"empty secretstring for {dbAdminId}");
             batchItemFailures.Concat(evnt.Records.Select(_message => new BatchItemFailure { ItemIdentifier = _message.MessageId }).ToList());
             return new SQSBatchResponse(batchItemFailures);
         }
@@ -105,13 +93,13 @@ public class Function
         }
         catch
         {
-            context.Logger.LogInformation($"error while parsing event, message : {message.Body}");
+            context.Logger.LogError($"error while parsing event, message : {message.Body}");
             return false;
         }
 
         if(_event == null)
         {
-            context.Logger.LogInformation($"cannot deserialize message to event, message: {message.Body}");
+            context.Logger.LogError($"cannot deserialize message to event, message: {message.Body}");
             return false;
         }
 
@@ -124,7 +112,7 @@ public class Function
 
                 if (cmd == null)
                 {
-                    context.Logger.LogInformation($"can not make parameterDbSql NpgsqlCommand, cmd is null");
+                    context.Logger.LogError($"can not make parameterDbSql NpgsqlCommand, cmd is null");
                     return false;
                 }
 
@@ -138,14 +126,14 @@ public class Function
                 }
                 catch (Exception ex)
                 {
-                    context.Logger.LogInformation($"error while parameterDbSql execute query. error message : {ex.Message}");
+                    context.Logger.LogError($"error while parameterDbSql execute query. error message : {ex.Message}");
                     return false;
                 }
             }
         }
 
-        string eventDbSql = _event.Parameters != null ?
-            $"insert into \"{eventTableName}\" (\"EventId\", \"UserId\", \"EventName\", \"ParametersOrderId\", \"CreateDate\") values (:EventId, :UserId, :EventName, :ParametersOrderId, :CreateDate) ON CONFLICT (\"EventId\") DO NOTHING;"
+        string eventDbSql = _event.Parameters != null
+            ? $"insert into \"{eventTableName}\" (\"EventId\", \"UserId\", \"EventName\", \"ParametersOrderId\", \"CreateDate\") values (:EventId, :UserId, :EventName, :ParametersOrderId, :CreateDate) ON CONFLICT (\"EventId\") DO NOTHING;"
             : $"insert into \"{eventTableName}\" (\"EventId\", \"UserId\", \"EventName\", \"CreateDate\") values (:EventId, :UserId, :EventName, :CreateDate) ON CONFLICT (\"EventId\") DO NOTHING;";
 
         using (NpgsqlCommand cmd = new NpgsqlCommand(eventDbSql, npgsqlConnection))
@@ -153,7 +141,7 @@ public class Function
 
             if (cmd == null)
             {
-                context.Logger.LogInformation($"can not make eventDbSql NpgsqlCommand, cmd is null");
+                context.Logger.LogError($"can not make eventDbSql NpgsqlCommand, cmd is null");
                 return false;
             } 
 
@@ -170,7 +158,7 @@ public class Function
             }
             catch (Exception ex)
             {
-                context.Logger.LogInformation($"error while eventDbSql execute query. error message : {ex.Message}");
+                context.Logger.LogError($"error while eventDbSql execute query. error message : {ex.Message}");
                 return false;
             }
         }

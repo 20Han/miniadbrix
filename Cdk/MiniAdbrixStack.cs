@@ -63,11 +63,9 @@ namespace Cdk
 
             dbSG.AddIngressRule(lambdaSG, Port.Tcp(5432), "allow lambda connection");
             dbSG.AddIngressRule(fargateSG, Port.Tcp(5432), "allow fargate connection");
-            dbSG.AddIngressRule(Peer.Ipv4("106.241.27.82/32"), Port.Tcp(5432), "allow local connection");
-            fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(8080), "allow any 80 connection");
+            fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(8080), "allow any 8080 connection");
             fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(80), "allow any http connection");
             fargateSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(443), "allow any https connection");
-            fargateSG.AddIngressRule(Peer.Ipv4("106.241.27.82/32"), Port.Tcp(22), "allow any https connection");
 
             // PostgreSql DB Instance (delete protection turned off because pattern is for learning.)
             // re-enable delete protection for a real implementation
@@ -87,6 +85,7 @@ namespace Cdk
             });
 
             var lambdaTimeoutSeconds = 10;
+
             var eventsWorkerLambda = new Function(this, "eventsWorker", new FunctionProps
             {
                 Runtime = Runtime.DOTNET_6,
@@ -113,13 +112,16 @@ namespace Cdk
                 Fifo = true
             });
 
+            /*
+             * visibility timeout의 경우 lambda timeout의 최소 6배가 되어야 함
+             * https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
+            */
             Queue eventQueue = new(this, id + "eventsQueue", new QueueProps {
                 QueueName = "EventsQueue.fifo",
                 DeliveryDelay = Duration.Millis(0),
                 VisibilityTimeout = Duration.Seconds(6 * lambdaTimeoutSeconds),
                 ContentBasedDeduplication = true,
                 Fifo = true,
-                
                 DeadLetterQueue = new DeadLetterQueue {
                     MaxReceiveCount = 3,
                     Queue = eventDeadLetterQueue,
